@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -8,6 +9,7 @@
 
 #include <chrono>
 #include <cstdarg>
+#include <cstring>
 #include <iostream>
 #include <tuple>
 
@@ -20,20 +22,37 @@ using namespace std;
 #define BUFFER_SIZE 1048576
 // }}}
 
+// request class {{{
 class Request {
    public:
+    int idx;
+    int delay;
     unsigned long long timestamp;
     string command;
     string response;
 
-    Request(string command)
-        : timestamp(std::chrono::system_clock::now().time_since_epoch() /
-                    std::chrono::nanoseconds(1)),
-          command(command),
-          response(NULL){};
-};
+    Request(int p_idx, int p_delay, string p_command) {
+        idx = p_idx;
+        delay = p_delay;
+        timestamp = chrono::system_clock::now().time_since_epoch() / chrono::nanoseconds(1);
+        command = p_command;
+        response = "";
 
-int main(int argc, char* argv[]) {
+        cout << "idx: " << idx << "\n";
+        cout << "delay: " << delay << "\n";
+        cout << "timestamp: " << timestamp << "\n";
+        cout << "command: " << command << "\n";
+    }
+};
+// }}}
+
+// client routine {{{
+void* client_routine(void* args) {
+    Request request = *(Request*)args;
+
+    // sleep away the delay time
+    sleep(request.delay);
+
     struct sockaddr_in server_addr;
 
     // set server address config
@@ -43,29 +62,53 @@ int main(int argc, char* argv[]) {
 
     int socket_fd = connect_to_server(&server_addr);
 
-    bool connection_open = true;
-    while (true) {
-        string request;
-        cout << "> ";
-        getline(cin, request);
-        int bytes_sent = write_socket(socket_fd, request);
-        if (bytes_sent == -1) {
-            cerr << "Error writing to client, socket may be closed.\n";
-            connection_open = false;
-            break;
+    int bytes_sent = write_socket(socket_fd, request.command);
+    if (bytes_sent == -1) {
+        cerr << "Error writing to client, socket may be closed.\n";
+    }
+
+    // read server response
+    int bytes_received = 0;
+    tie(request.response, bytes_received) = read_socket(socket_fd, BUFFER_SIZE);
+    if (bytes_received <= 0) {
+        cerr << "Error reading server message\n";
+    }
+
+    // print transaction info
+    cout << request.idx << ":" << request.timestamp << ":" << request.response << "\n";
+
+    // close connection
+    close(socket_fd);
+
+    return NULL;
+}
+// }}}
+
+int main(int argc, char* argv[]) {
+    int user_thread_count;
+    cin >> user_thread_count;
+
+    // initialize threads
+    cin.ignore();
+    pthread_t user_threads[user_thread_count];
+    for (int i = 0; i < user_thread_count; i++) {
+        int delay;
+        cin >> delay;
+        string command;
+        getline(cin, command);
+
+        Request request = Request(i, delay, trim(command));
+
+        if (pthread_create(&user_threads[i], NULL, &client_routine, &request)) {
+            perror("Error creating client thread");
         }
+    }
 
-        string response;
-        int bytes_received = 0;
-        tie(response, bytes_received) = read_socket(socket_fd, BUFFER_SIZE);
-
-        if (bytes_received <= 0) {
-            cerr << "Error reading client message\n";
-            connection_open = false;
-            break;
+    // join threads
+    for (int i = 0; i < user_thread_count; i++) {
+        if (pthread_join(user_threads[i], NULL)) {
+            perror("Error joining client thread");
         }
-
-        cout << "=> " << response << "\n";
     }
 
     return 0;

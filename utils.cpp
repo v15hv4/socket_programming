@@ -59,3 +59,11 @@ int connect_to_server(struct sockaddr_in* ptr) {
 
     return socket_fd;
 }
+
+// utility function to trim whitespace from a string
+string trim(const string& line) {
+    const char* WhiteSpace = " \t\v\r\n";
+    size_t start = line.find_first_not_of(WhiteSpace);
+    size_t end = line.find_last_not_of(WhiteSpace);
+    return start == end ? string() : line.substr(start, end - start + 1);
+}

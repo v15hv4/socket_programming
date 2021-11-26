@@ -35,7 +35,7 @@ void handle_connection(int client_socket_fd) {
             break;
         }
 
-        cout << "Message from client: " << request << "\n";
+        cout << "CLIENT: " << request << "\n";
 
         if (request == "exit") {
             cout << "Exiting\n";
@@ -43,7 +43,7 @@ void handle_connection(int client_socket_fd) {
             break;
         }
 
-        string response = request;
+        string response = "you said -- " + request;
 
         int bytes_sent = write_socket(client_socket_fd, response);
         if (bytes_sent == -1) {
