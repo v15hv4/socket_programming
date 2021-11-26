@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstdarg>
 #include <iostream>
 #include <tuple>
@@ -18,6 +19,19 @@ using namespace std;
 #define SERVER_PORT 8001
 #define BUFFER_SIZE 1048576
 // }}}
+
+class Request {
+   public:
+    unsigned long long timestamp;
+    string command;
+    string response;
+
+    Request(string command)
+        : timestamp(std::chrono::system_clock::now().time_since_epoch() /
+                    std::chrono::nanoseconds(1)),
+          command(command),
+          response(NULL){};
+};
 
 int main(int argc, char* argv[]) {
     struct sockaddr_in server_addr;
