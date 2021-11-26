@@ -61,9 +61,9 @@ void handle_connection(int client_socket_fd) {
     bool connection_open = true;
 
     while (connection_open) {
-        string message;
+        string request;
         int bytes_received = 0;
-        tie(message, bytes_received) = read_socket(client_socket_fd, BUFFER_SIZE);
+        tie(request, bytes_received) = read_socket(client_socket_fd, BUFFER_SIZE);
 
         if (bytes_received <= 0) {
             cerr << "Error reading client message\n";
@@ -71,15 +71,15 @@ void handle_connection(int client_socket_fd) {
             break;
         }
 
-        cout << "Message from client: " << message << "\n";
+        cout << "Message from client: " << request << "\n";
 
-        if (message == "exit") {
+        if (request == "exit") {
             cout << "Exiting\n";
             connection_open = false;
             break;
         }
 
-        string response = "Ack: " + message;
+        string response = "Ack: " + request;
 
         int bytes_sent = write_socket(client_socket_fd, response);
         if (bytes_sent == -1) {
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
     }
 
     // set server address config
-    bzero((char*)&server_addr, sizeof(server_addr));
+    memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
@@ -135,8 +135,9 @@ int main(int argc, char* argv[]) {
             cerr << "Error accepting request\n";
             exit(-1);
         }
-        cout << ANSI_GREEN << "Client " << ntohs(client_addr.sin_port) << ":"
-             << inet_ntoa(client_addr.sin_addr) << " connected." << ANSI_RESET << "\n";
+        cout << ANSI_GREEN << "Client " << inet_ntoa(client_addr.sin_addr) << ":"
+             << ntohs(client_addr.sin_port) << ":"
+             << " connected." << ANSI_RESET << "\n";
 
         handle_connection(client_socket_fd);
     }
