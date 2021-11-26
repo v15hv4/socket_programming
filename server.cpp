@@ -9,51 +9,15 @@
 #include <cstdarg>
 #include <iostream>
 #include <tuple>
+
+#include "colors.h"
+#include "utils.h"
 using namespace std;
 
 // server config {{{
 #define MAX_CLIENTS 4
 #define PORT 8001
 #define BUFFER_SIZE 1048576
-// }}}
-
-// ANSI color codes {{{
-const string ANSI_RED = "\x1B[31m";
-const string ANSI_GREEN = "\x1B[32m";
-const string ANSI_YELLOW = "\x1B[33m";
-const string ANSI_BLUE = "\x1B[34m";
-const string ANSI_PURPLE = "\x1B[35m";
-const string ANSI_CYAN = "\x1B[36m";
-const string ANSI_WHITE = "\x1B[37m";
-const string ANSI_RESET = "\x1B[0m";
-// }}}
-
-// utility function to read string from socket {{{
-pair<string, int> read_socket(const int& fd, int bytes) {
-    string message;
-    message.resize(bytes);
-
-    int bytes_received = read(fd, &message[0], bytes - 1);
-    if (bytes_received <= 0) {
-        cerr << "Failed to read data from socket.\n";
-    }
-
-    message[bytes_received] = 0;
-    message.resize(bytes_received);
-
-    return {message, bytes_received};
-}
-// }}}
-
-// utility function to send string to socket {{{
-int write_socket(int fd, const string& s) {
-    int bytes_sent = write(fd, s.c_str(), s.length());
-    if (bytes_sent < 0) {
-        cerr << "Failed to send data via socket.\n";
-    }
-
-    return bytes_sent;
-}
 // }}}
 
 // handle incoming connections {{{
@@ -79,7 +43,7 @@ void handle_connection(int client_socket_fd) {
             break;
         }
 
-        string response = "Ack: " + request;
+        string response = request;
 
         int bytes_sent = write_socket(client_socket_fd, response);
         if (bytes_sent == -1) {
@@ -136,8 +100,7 @@ int main(int argc, char* argv[]) {
             exit(-1);
         }
         cout << ANSI_GREEN << "Client " << inet_ntoa(client_addr.sin_addr) << ":"
-             << ntohs(client_addr.sin_port) << ":"
-             << " connected." << ANSI_RESET << "\n";
+             << ntohs(client_addr.sin_port) << " connected." << ANSI_RESET << "\n";
 
         handle_connection(client_socket_fd);
     }
