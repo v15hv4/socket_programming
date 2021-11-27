@@ -7,7 +7,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <chrono>
 #include <cstdarg>
 #include <cstring>
 #include <iostream>
@@ -27,21 +26,14 @@ class Request {
    public:
     int idx;
     int delay;
-    unsigned long long timestamp;
     string command;
     string response;
 
     Request(int p_idx, int p_delay, string p_command) {
         idx = p_idx;
         delay = p_delay;
-        timestamp = chrono::system_clock::now().time_since_epoch() / chrono::nanoseconds(1);
         command = p_command;
         response = "";
-
-        cout << "idx: " << idx << "\n";
-        cout << "delay: " << delay << "\n";
-        cout << "timestamp: " << timestamp << "\n";
-        cout << "command: " << command << "\n";
     }
 };
 // }}}
@@ -75,7 +67,7 @@ void* client_routine(void* args) {
     }
 
     // print transaction info
-    cout << request.idx << ":" << request.timestamp << ":" << request.response << "\n";
+    cout << request.idx << ":" << request.response << "\n";
 
     // close connection
     close(socket_fd);

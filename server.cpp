@@ -63,7 +63,7 @@ void* worker_routine(void* args) {
         // if request assigned, respond to it
         if (socket_fd >= 0) {
             // process command
-            string response = execute_query(command);
+            string response = to_string(pthread_self()) + ":" + execute_query(command);
 
             // add a slight delay before responding
             sleep(WORKER_DELAY);
