@@ -29,4 +29,7 @@ std::string q_concat(int key1, int key2);
 // fetch value of given key from dictionary
 std::string q_fetch(int key);
 
+// print current state of dictionary
+void print_dictdb();
+
 #endif

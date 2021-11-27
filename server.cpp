@@ -31,20 +31,24 @@ using namespace std;
 // queue requests in the form <socket_fd, command>
 queue<pair<int, string>> request_queue;
 
-// mutex lock for request queue
+// mutex lock and condition variable for request queue
 pthread_mutex_t request_queue_mutex;
+pthread_cond_t request_queue_cond;
 
 // maintain worker thread pool
 pthread_t* worker_pool;
 
-// handle incoming connections {{{
-void handle_connection(int client_socket_fd) {
+// add incoming requests to the queue {{{
+void submit_request(int client_socket_fd) {
     string request;
     int bytes_received = 0;
     tie(request, bytes_received) = read_socket(client_socket_fd, BUFFER_SIZE);
 
-    // queue request
+    // queue the request
+    pthread_mutex_lock(&request_queue_mutex);
     request_queue.push(make_pair(client_socket_fd, request));
+    pthread_mutex_unlock(&request_queue_mutex);
+    pthread_cond_broadcast(&request_queue_cond);
 }
 // }}}
 
@@ -54,31 +58,33 @@ void* worker_routine(void* args) {
         // look for pending requests in the queue
         int socket_fd = -1;
         string command = "";
+
         pthread_mutex_lock(&request_queue_mutex);
-        if (!request_queue.empty()) {
-            tie(socket_fd, command) = request_queue.front();
-            request_queue.pop();
+        while (request_queue.empty()) {
+            pthread_cond_wait(&request_queue_cond, &request_queue_mutex);
         }
+        tie(socket_fd, command) = request_queue.front();
+        request_queue.pop();
         pthread_mutex_unlock(&request_queue_mutex);
 
-        // if request assigned, respond to it
-        if (socket_fd >= 0) {
-            // process command
-            string response = to_string(pthread_self()) + ":" + execute_query(command);
+        // process command
+        string response = to_string(pthread_self()) + ":" + execute_query(command);
 
-            // add a slight delay before responding
-            sleep(WORKER_DELAY);
+        // add a slight delay before responding
+        sleep(WORKER_DELAY);
 
-            // send response to client
-            int bytes_sent = write_socket(socket_fd, response);
-            if (bytes_sent == -1) {
-                cerr << "Error writing to client, socket may be closed.\n";
-            }
-
-            // close connection
-            close(socket_fd);
-            cout << ANSI_RED << "Disconnected from client." << ANSI_RESET << "\n";
+        // send response to client
+        int bytes_sent = write_socket(socket_fd, response);
+        if (bytes_sent == -1) {
+            cerr << "Error writing to client, socket may be closed.\n";
         }
+
+        // close connection
+        close(socket_fd);
+        cout << ANSI_RED << "Disconnected from client." << ANSI_RESET << "\n";
+
+        // TODO: remove
+        print_dictdb();
     }
     return NULL;
 }
@@ -102,6 +108,9 @@ int main(int argc, char* argv[]) {
 
     // initialize request queue mutex
     pthread_mutex_init(&request_queue_mutex, NULL);
+
+    // initialize request queue condition
+    pthread_cond_init(&request_queue_cond, NULL);
 
     // initialize socket server
     int welcoming_socket_fd, client_socket_fd;
@@ -146,8 +155,14 @@ int main(int argc, char* argv[]) {
         cout << ANSI_GREEN << "Client " << inet_ntoa(client_addr.sin_addr) << ":"
              << ntohs(client_addr.sin_port) << " connected." << ANSI_RESET << "\n";
 
-        handle_connection(client_socket_fd);
+        submit_request(client_socket_fd);
     }
+
+    // destroy mutexes
+    pthread_mutex_destroy(&request_queue_mutex);
+
+    // destroy condition variables
+    pthread_cond_destroy(&request_queue_cond);
 
     // close welcoming socket fd
     close(welcoming_socket_fd);

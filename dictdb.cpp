@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "colors.h"
 #include "utils.h"
 using namespace std;
 
@@ -87,4 +88,11 @@ string q_concat(int key1, int key2) {
 string q_fetch(int key) {
     /* ... */
     return "<fetched value>";
+}
+
+// print current state of dictionary
+void print_dictdb() {
+    cout << ANSI_CYAN;
+    for (auto& t : DICTDB) cout << t.first << ": " << t.second << "\n";
+    cout << ANSI_RESET;
 }
