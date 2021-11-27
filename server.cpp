@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "colors.h"
+#include "dictdb.h"
 #include "utils.h"
 using namespace std;
 
@@ -46,12 +47,7 @@ void handle_connection(int client_socket_fd) {
 }
 // }}}
 
-// execute command on dictionary
-string execute_query(string command) {
-    /* ... */
-    return "Successfully executed query: '" + command + "'";
-}
-
+// worker routine {{{
 void* worker_routine(void* args) {
     while (1) {
         // look for pending requests in the queue
@@ -85,6 +81,7 @@ void* worker_routine(void* args) {
     }
     return NULL;
 }
+// }}}
 
 int main(int argc, char* argv[]) {
     // initialize worker threads

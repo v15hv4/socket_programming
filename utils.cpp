@@ -9,6 +9,7 @@
 #include <cstdarg>
 #include <iostream>
 #include <tuple>
+#include <vector>
 
 #include "colors.h"
 using namespace std;
@@ -66,4 +67,19 @@ string trim(const string& line) {
     size_t start = line.find_first_not_of(WhiteSpace);
     size_t end = line.find_last_not_of(WhiteSpace);
     return start == end ? string() : line.substr(start, end - start + 1);
+}
+
+// utility function to split string given delimiter
+vector<string> split(string str, string delim) {
+    vector<string> res = {};
+    size_t pos = 0;
+
+    while ((pos = str.find(delim)) != string::npos) {
+        string token = str.substr(0, pos);
+        if (token.length() > 0) res.push_back(token);
+        str.erase(0, pos + delim.length());
+    }
+
+    if (str.length() > 0) res.push_back(str);
+    return res;
 }

@@ -5,14 +5,15 @@ CC=g++
 CFLAGS=-I$(IDIR)
 LIBS=-pthread
 
-COMMON_DEPS=utils.cpp
+_DEPS=utils dictdb
+DEPS=$(patsubst %, %.cpp, $(_DEPS))
 
-server: server.cpp $(COMMON_DEPS)
-	$(CC) $(CFLAGS) $(LIBS) $(COMMON_DEPS) server.cpp -o server
+server: server.cpp $(DEPS)
+	$(CC) $(CFLAGS) $(LIBS) $(DEPS) server.cpp -o server
 	chmod +x ./server
 
 client: client.cpp $(COMMON_DEPS)
-	$(CC) $(CFLAGS) $(LIBS) $(COMMON_DEPS) client.cpp -o client
+	$(CC) $(CFLAGS) $(LIBS) $(DEPS) client.cpp -o client
 	chmod +x client
 
 clean:
