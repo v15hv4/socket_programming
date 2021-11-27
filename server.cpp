@@ -81,7 +81,7 @@ void* worker_routine(void* args) {
 
         // close connection
         close(socket_fd);
-        cout << ANSI_RED << "Disconnected from client." << ANSI_RESET << "\n";
+        cout << ANSI_RED << "Client disconnected." << ANSI_RESET << "\n";
 
         // TODO: remove
         print_dictdb();

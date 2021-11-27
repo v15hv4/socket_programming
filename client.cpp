@@ -77,27 +77,34 @@ void* client_routine(void* args) {
 // }}}
 
 int main(int argc, char* argv[]) {
-    int user_thread_count;
-    cin >> user_thread_count;
+    int request_count;
+    cin >> request_count;
 
-    // initialize threads
+    // initialize request list
     cin.ignore();
-    pthread_t user_threads[user_thread_count];
-    for (int i = 0; i < user_thread_count; i++) {
+    vector<Request> request_list;
+    for (int i = 0; i < request_count; i++) {
         int delay;
         cin >> delay;
         string command;
         getline(cin, command);
 
         Request request = Request(i, delay, trim(command));
+        request_list.push_back(request);
+    }
 
-        if (pthread_create(&user_threads[i], NULL, &client_routine, &request)) {
+    // initialize threads
+    pthread_t user_threads[request_count];
+    for (int i = 0; i < request_count; i++) {
+        pthread_t* thread = &user_threads[i];
+        Request* request = &request_list[i];
+        if (pthread_create(thread, NULL, &client_routine, request)) {
             perror("Error creating client thread");
         }
     }
 
     // join threads
-    for (int i = 0; i < user_thread_count; i++) {
+    for (int i = 0; i < request_count; i++) {
         if (pthread_join(user_threads[i], NULL)) {
             perror("Error joining client thread");
         }

@@ -56,7 +56,7 @@ int connect_to_server(struct sockaddr_in* ptr) {
         exit(-1);
     }
 
-    cout << ANSI_GREEN << "Successfully connected to server." << ANSI_RESET << "\n";
+    /* cout << ANSI_GREEN << "Successfully connected to server." << ANSI_RESET << "\n"; */
 
     return socket_fd;
 }

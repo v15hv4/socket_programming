@@ -12,7 +12,7 @@
 using namespace std;
 
 // global dictionary
-map<int, std::string> DICTDB;
+map<int, string> DICTDB;
 
 // mutex lock for global dictionary
 pthread_mutex_t dictdb_mutex;
@@ -62,32 +62,92 @@ string execute_query(string command) {
 
 // insert key-value pair into dictionary
 string q_insert(int key, string value) {
-    /* ... */
-    return "Insertion successful";
+    string response = "";
+
+    pthread_mutex_lock(&dictdb_mutex);
+    // check if key already exists
+    if (DICTDB.find(key) != DICTDB.end()) {
+        response = "Key already exists";
+    } else {
+        DICTDB.insert({key, value});
+        response = "Insertion successful";
+    }
+    pthread_mutex_unlock(&dictdb_mutex);
+
+    return response;
 }
 
 // delete key from dictionary
 string q_delete(int key) {
-    /* ... */
-    return "Deletion successful";
+    string response = "";
+
+    pthread_mutex_lock(&dictdb_mutex);
+    // check if key exists
+    if (DICTDB.find(key) == DICTDB.end()) {
+        response = "No such key exists";
+    } else {
+        DICTDB.erase(key);
+        response = "Deletion successful";
+    }
+    pthread_mutex_unlock(&dictdb_mutex);
+
+    return response;
 }
 
 // update value of given key in dictionary
 string q_update(int key, string value) {
-    /* ... */
-    return "<updated value of key>";
+    string response = "";
+
+    pthread_mutex_lock(&dictdb_mutex);
+    // check if key exists
+    auto itr = DICTDB.find(key);
+    if (itr == DICTDB.end()) {
+        response = "Key does not exist";
+    } else {
+        itr->second = value;
+        response = value;
+    }
+    pthread_mutex_unlock(&dictdb_mutex);
+
+    return response;
 }
 
 // fetch concatenation of values at specified keys in the dictionary
 string q_concat(int key1, int key2) {
-    /* ... */
-    return "Concatenation successful";
+    string response = "";
+
+    pthread_mutex_lock(&dictdb_mutex);
+    // check if keys exist
+    auto itr1 = DICTDB.find(key1);
+    auto itr2 = DICTDB.find(key2);
+    if ((itr1 == DICTDB.end()) || (itr2 == DICTDB.end())) {
+        response = "Concat failed as at least one of the keys does not exist";
+    } else {
+        string temp = itr2->second;
+        itr2->second += itr1->second;
+        itr1->second += temp;
+        response = itr2->second;
+    }
+    pthread_mutex_unlock(&dictdb_mutex);
+
+    return response;
 }
 
 // fetch value of given key from dictionary
 string q_fetch(int key) {
-    /* ... */
-    return "<fetched value>";
+    string response = "";
+
+    pthread_mutex_lock(&dictdb_mutex);
+    // check if key exists
+    auto itr = DICTDB.find(key);
+    if (itr == DICTDB.end()) {
+        response = "Key does not exist";
+    } else {
+        response = itr->second;
+    }
+    pthread_mutex_unlock(&dictdb_mutex);
+
+    return response;
 }
 
 // print current state of dictionary
