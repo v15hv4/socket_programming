@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <cstdarg>
+#include <cstdlib>
 #include <iostream>
 #include <queue>
 #include <string>
@@ -34,7 +35,7 @@ queue<pair<int, string>> request_queue;
 pthread_mutex_t request_queue_mutex;
 
 // maintain worker thread pool
-pthread_t worker_pool[WORKER_POOL_SIZE];
+pthread_t* worker_pool;
 
 // handle incoming connections {{{
 void handle_connection(int client_socket_fd) {
@@ -84,8 +85,16 @@ void* worker_routine(void* args) {
 // }}}
 
 int main(int argc, char* argv[]) {
+    int worker_pool_size = WORKER_POOL_SIZE;
+
+    // determine number of workers in pool from argument
+    if (argc > 1) worker_pool_size = atoi(argv[1]);
+
+    // allocate memory for worker thread pool
+    worker_pool = (pthread_t*)calloc(worker_pool_size, sizeof(pthread_t));
+
     // initialize worker threads
-    for (int i = 0; i < WORKER_POOL_SIZE; i++) {
+    for (int i = 0; i < worker_pool_size; i++) {
         if (pthread_create(&worker_pool[i], NULL, &worker_routine, NULL)) {
             perror("Error creating worker thread");
         }
@@ -124,7 +133,7 @@ int main(int argc, char* argv[]) {
         cerr << "Error listening on welcoming socket\n";
         exit(-1);
     }
-    cout << "Server with " << WORKER_POOL_SIZE << " workers listening on port " << PORT << ".\n";
+    cout << "Server with " << worker_pool_size << " workers listening on port " << PORT << ".\n";
 
     clilen = sizeof(client_addr);
     while (true) {
